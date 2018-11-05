@@ -1,3 +1,5 @@
+require 'open-uri'
+
 class GamesController < ApplicationController
   def new
     @letters = []
@@ -8,18 +10,26 @@ class GamesController < ApplicationController
   end
 
   def score
-    result = params[:word]
-    letters = params[:letters]
-    valid_word =
+    @result = params[:word]
+    @letters = params[:letters]
 
-    if result != letters
-      @result = "No cheating! Letters are not in the original grid"
-    elsif result != valid_word
-      @result = "Nice try but word does not exist in English"
-    elsif result == letters && valid_word
-      @result = "Great job, you created a word!"
+    if included?(@result, @letters)
+      @response = "No cheating! Letters are not in the original grid"
+    elsif !included?(@result, @letters) && valid_word(@result)
+      @response = "Great job, you created a word!"
     else
-      @result = "Input Error"
+      @response = "Nice try but word does not exist in English"
     end
   end
+
+  def included?(word, letters)
+    word.chars.all? { |letter| word.count(letter) > letters.count(letter) }
+  end
+
+  def valid_word(word)
+    url = open("https://wagon-dictionary.herokuapp.com/#{word}")
+    json = JSON.parse((url).read)
+    json['found']
+  end
 end
+
